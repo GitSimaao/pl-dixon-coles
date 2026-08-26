@@ -246,7 +246,6 @@ Dixon, M.J. and Coles, S.G. (1997). "Modelling Association Football Scores and
 Inefficiencies in the Football Betting Market." *Journal of the Royal Statistical
 Society: Series C (Applied Statistics)*, 46(2), 265–280.
 
-Data: [football-data.co.uk](https://www.football-data.co.uk/englandm.php), whose
-files are free to use with attribution and remain theirs. The code in this
-repository is MIT-licensed; the CSVs in `data/` are not mine to relicense and are
-included only so the backtest reproduces byte for byte.
+Data: [football-data.co.uk](https://www.football-data.co.uk/englandm.php). The
+code here is MIT-licensed; the CSVs in `data/` are not mine to relicense and are
+included only so the backtest reproduces byte for byte — see `NOTICE`.

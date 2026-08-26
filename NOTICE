@@ -1,0 +1,9 @@
+Third-party data
+================
+
+The CSV files in data/ are published by football-data.co.uk and are included
+here only so that the backtest reproduces byte for byte. They are not covered
+by the MIT licence in LICENSE and remain subject to football-data.co.uk's own
+terms: free to use, with attribution.
+
+    https://www.football-data.co.uk/englandm.php
