@@ -181,6 +181,8 @@ def by_season(preds: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for season, block in preds.groupby("Season"):
         graded = block[block["has_odds"]]
+        if graded.empty:        # seasons before the benchmark exists train only
+            continue
         row = {
             "season": season,
             "n": int(len(graded)),
@@ -232,12 +234,13 @@ def betting_simulation(preds: pd.DataFrame, edge_threshold: float = 0.02,
     Read this as a diagnostic, not a P&L forecast. Beating a closing line in a
     backtest is not the same as getting that price in a live market: closing
     odds are the sharpest number of the day, you would have had to bet earlier
-    at worse prices, and a bettor who consistently beat Pinnacle would be
+    at worse prices, and a bettor who consistently beat the close would be
     limited long before the sample ended.
     """
+    from data_io import ODDS_COLS
     df = preds[preds["has_odds"]].copy()
     model_p = df[PROB_COLS].to_numpy(float)
-    odds = df[["PSCH", "PSCD", "PSCA"]].to_numpy(float)
+    odds = df[ODDS_COLS].to_numpy(float)
 
     ev = model_p * odds - 1.0                     # expected profit per unit staked
     outcome = result_index(df["FTR"])

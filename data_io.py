@@ -18,11 +18,19 @@ import re
 import numpy as np
 import pandas as pd
 
-# Columns we actually need. PSCH/PSCD/PSCA are Pinnacle's *closing* prices for
-# home / draw / away. Closing prices are the sharpest public number in football:
-# they are the market after all the informed money has gone in.
+# Columns we actually need. AvgCH/AvgCD/AvgCA are the market-average *closing*
+# prices for home / draw / away — the mean across the books football-data.co.uk
+# surveys, taken at kickoff. Closing prices are the sharpest public number in
+# football: they are the market after all the informed money has gone in.
+#
+# Until January 2026 the benchmark was Pinnacle's close (PSCH/PSCD/PSCA); then
+# football-data stopped carrying those columns. On the 2,490 matches carrying
+# both prices the two de-vigged benchmarks differ by 0.0001 nats of log loss —
+# scripts/check_benchmark.py in the production repo reruns that measurement.
+# AvgC* is published from 2019/20, so earlier seasons train the model but
+# cannot be graded.
 CORE_COLS = ["Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
-ODDS_COLS = ["PSCH", "PSCD", "PSCA"]
+ODDS_COLS = ["AvgCH", "AvgCD", "AvgCA"]
 
 OUTCOMES = ("H", "D", "A")
 OUTCOME_INDEX = {"H": 0, "D": 1, "A": 2}
@@ -78,13 +86,18 @@ def add_market_probabilities(matches: pd.DataFrame) -> pd.DataFrame:
     Turn closing decimal odds into probabilities that sum to one.
 
     A bookmaker's three prices imply more than 100% -- the excess is the margin
-    (the "overround", ~2% for Pinnacle). Dividing each implied probability by the
-    total removes it proportionally. This is the simplest de-vigging method; it
-    slightly over-weights longshots compared with Shin or power methods, but it
-    is the standard baseline and it is what the model is measured against.
+    (the "overround", ~4% for the market average). Dividing each implied
+    probability by the total removes it proportionally. This is the simplest
+    de-vigging method; it slightly over-weights longshots compared with Shin or
+    power methods, but it is the standard baseline and it is what the model is
+    measured against.
     """
     out = matches.copy()
-    has_odds = out[ODDS_COLS].notna().all(axis=1)
+    # `> 1` because a 0.0 in an odds column is a placeholder, not a price --
+    # notna() lets it through, and 1/0 turns the row into probabilities of
+    # [0, 0, nan] and a log loss of ~34 for one match.
+    has_odds = (out[ODDS_COLS].notna().all(axis=1)
+                & (out[ODDS_COLS] > 1).all(axis=1))
 
     inv = 1.0 / out.loc[has_odds, ODDS_COLS].to_numpy(dtype=float)
     overround = inv.sum(axis=1, keepdims=True)
@@ -141,7 +154,7 @@ def accuracy(probs: np.ndarray, results) -> float:
 
 
 def summarise_market(matches: pd.DataFrame) -> dict:
-    """The benchmark line: how good is Pinnacle's closing price, in log loss?"""
+    """The benchmark line: how good is the market-average close, in log loss?"""
     graded = matches[matches["has_odds"]]
     probs = graded[["mkt_H", "mkt_D", "mkt_A"]].to_numpy(dtype=float)
     return {

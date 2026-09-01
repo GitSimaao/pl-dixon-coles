@@ -79,7 +79,7 @@ def log_loss_by_season(season_table, path="figures/log_loss_by_season.png"):
 
     ax.hlines(y, df["market"], df["model"], color=GRID, linewidth=3, zorder=3)
     ax.scatter(df["market"], y, s=80, color=MARKET, zorder=5,
-               edgecolor=SURFACE, linewidth=2, label="Pinnacle closing")
+               edgecolor=SURFACE, linewidth=2, label="market-average closing")
     ax.scatter(df["model"], y, s=80, color=MODEL, zorder=5,
                edgecolor=SURFACE, linewidth=2, label="Dixon-Coles model")
 

@@ -1,8 +1,8 @@
 # Premier League match forecasting — Dixon-Coles vs the closing line
 
 A Dixon-Coles goals model for the English Premier League, backtested walk-forward
-over nine seasons and scored against Pinnacle's closing odds — the sharpest public
-number in football.
+over nine seasons and scored, on the seven with a published market-average close,
+against that closing line — the market after all the informed money has moved it.
 
 > **This is the research.** The same model runs in production at
 > [proofodds.com](https://proofodds.com), where every prediction is sealed and hashed before
@@ -11,10 +11,19 @@ number in football.
 > that site quotes come from, and how to reproduce them.
 
 **Headline result: the model does not beat the market, and it was never likely to.**
-Over 1,730 held-out matches it loses **0.0225 nats per match** in log loss to the
-closing line (0.9693 vs 0.9468). Pooled with the market it adds nothing
-(+0.0015). That is the honest finding, and it is the point of the exercise: the
+Over 1,900 held-out matches it loses **0.0227 nats per match** in log loss to the
+closing line (0.9783 vs 0.9556). Pooled with the market it adds nothing
+(+0.0022). That is the honest finding, and it is the point of the exercise: the
 question "do I have an edge?" has an answer, and the answer here is no.
+
+> **Benchmark note (January 2026).** Until mid-January 2026 the benchmark was
+> Pinnacle's closing price; football-data.co.uk then stopped carrying those
+> columns, and every number here was recomputed against the market-average close
+> (`AvgC*`), which exists for every match from 2019/20. On the 2,490 matches
+> carrying both prices the two de-vigged benchmarks differ by 0.0001 nats —
+> the production repo's `scripts/check_benchmark.py` reruns that measurement.
+> On the old benchmark the same walk-forward read: model 0.9654, market 0.9484
+> over 3,250 matches of 2017/18–2025/26.
 
 ![log loss by season](figures/log_loss_by_season.png)
 
@@ -25,23 +34,23 @@ question "do I have an edge?" has an answer, and the answer here is no.
 Everything below is strictly out of sample: to price a match on date *D*, the
 model has only seen matches played before *D*.
 
-| period | matches | model | market | blend (18% model) |
+| period | matches | model | market | blend (22% model) |
 |---|---|---|---|---|
-| **Test** 2021/22 – 2025/26 | 1,730 | 0.9693 | **0.9468** | 0.9483 |
-| Validation 2017/18 – 2020/21 | 1,520 | 0.9610 | 0.9501 | 0.9495 |
-| All 2017/18 – 2025/26 | 3,250 | 0.9654 | 0.9484 | 0.9489 |
+| **Test** 2021/22 – 2025/26 | 1,900 | 0.9783 | **0.9556** | 0.9578 |
+| Validation (graded part) 2019/20 – 2020/21 | 760 | 0.9938 | 0.9846 | 0.9837 |
+| All graded 2019/20 – 2025/26 | 2,660 | 0.9827 | 0.9639 | 0.9652 |
 
 Log loss, lower is better. Two reference points frame the scale: predicting
-1/3-1/3-1/3 every week scores **1.0986**, and the closing line scores **0.9524**
-across all 4,010 priced matches. So *everything anyone knows about football* is
-worth about 0.146 nats. The model captures roughly seven eighths of that gap and
-gives up the last eighth.
+1/3-1/3-1/3 every week scores **1.0986**, and the closing line scores **0.9639**
+across all 2,660 priced matches. So *everything anyone knows about football* is
+worth about 0.135 nats. The model captures roughly six sevenths of that gap and
+gives up the last seventh.
 
 | | model | market |
 |---|---|---|
-| log loss | 0.9654 | 0.9484 |
-| RPS | 0.1987 | 0.1932 |
-| top pick correct | 54.3% | 55.4% |
+| log loss | 0.9827 | 0.9639 |
+| RPS | 0.2030 | 0.1968 |
+| top pick correct | 52.7% | 55.0% |
 
 The hyperparameters and the blend weight were chosen on the validation period and
 never touched again; the test period informed no decision.
@@ -165,9 +174,11 @@ once, and the training slice is taken with `searchsorted`, so a future match
 physically cannot enter a fit. The model is refitted on **every match date** —
 about 1,200 fits per pass.
 
-The same discipline applies to the hyperparameters. ξ, the prior width and the
-blend weight are all chosen on 2017/18–2020/21 and then frozen; picking them on
-the data you report is just a slower form of the same bias.
+The same discipline applies to the hyperparameters. ξ and the prior width were
+chosen on the 2017/18–2020/21 validation window (when the old Pinnacle benchmark
+still existed) and then frozen; the blend weight is fitted on the graded part of
+the same window. Picking them on the data you report is just a slower form of
+the same bias.
 
 ---
 
@@ -175,17 +186,18 @@ the data you report is just a slower form of the same bias.
 
 - **The staking simulation is a diagnostic, not a P&L.** `betting_simulation()`
   stakes fractional Kelly against the closing price and, unsurprisingly given the
-  log loss, loses (−9.9% ROI on the test period). Even a positive number there
+  log loss, loses (−12.3% ROI on the test period). Even a positive number there
   would not have meant much: you cannot bet into a closing line, you would have
   had to bet hours earlier at worse prices, and anyone who consistently beat
-  Pinnacle would be limited long before the sample ended.
+  the close would be limited long before the sample ended.
 - **De-vigging is proportional**, the simplest method. It slightly overstates
   longshot probabilities relative to Shin or power methods, which if anything
   flatters the model.
-- **170 matches have no closing odds.** Pinnacle's prices stop appearing in the
-  source file part-way through January 2026. Those matches stay in *training* —
-  they are real results — but they cannot be part of the comparison, so 2025/26
-  is scored on 210 of its 380 matches.
+- **The first four seasons train but are not graded.** The market-average close
+  is published from 2019/20, so 2015/16–2018/19 feed the fits — they are real
+  results — but cannot be part of the comparison. (This is also why the
+  benchmark switch was possible at all: unlike Pinnacle's columns, `AvgC*` is
+  complete for every season it exists in.)
 - **No injuries, no lineups, no shot data.** See the ideas below.
 
 ---

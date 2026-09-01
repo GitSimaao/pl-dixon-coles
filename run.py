@@ -61,7 +61,7 @@ def main(tune: bool = False, figures: bool = True) -> dict:
     print(f"  seasons                 {matches['Season'].nunique()} "
           f"({matches['Season'].min()} - {matches['Season'].max()})")
     print(f"  teams                   {len(teams)}")
-    print(f"  with Pinnacle closing   {info['n_with_odds']}")
+    print(f"  with closing odds       {info['n_with_odds']}")
     print(f"  without odds            {info['n_without_odds']}  (kept for training, "
           f"excluded from the comparison)")
     print(f"  mean overround          {info['mean_overround']:.3%}")
@@ -128,7 +128,7 @@ def main(tune: bool = False, figures: bool = True) -> dict:
     print("RESULTS")
     print("=" * 72)
     scores = {
-        "all": block("ALL (2017/18 - 2025/26)", preds),
+        "all": block("ALL GRADED (2019/20 - 2025/26)", preds),
         "validation": block("VALIDATION (used to pick xi, prior_sd, blend weight)", val),
         "test": block("TEST (never used for any choice)", test),
     }
